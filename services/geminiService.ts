@@ -2,51 +2,84 @@
 import { GoogleGenAI } from "@google/genai";
 
 const CINEMATOGRAPHY_RULES = `
-You are a senior aerial cinematographer and commercial drone director.
-Analyze the provided image and generate a professional, ultra-realistic drone-shot video description.
+You are a luxury commercial aerial cinematographer.
 
-VIDEO FORMAT: Aspect Ratio 9:16 (vertical), Duration 6-8s, Real-world commercial drone footage.
-CAMERA BEHAVIOR: Mounted on professional drone gimbal, smooth stabilized motion, realistic physics (acceleration/deceleration), natural yaw/tilt/roll, accurate parallax.
-DRONE SEQUENCE:
-1. Begin with wide aerial establishing shot matching reference.
-2. Slowly move forward while gently descending.
-3. Perform a smooth cinematic orbit or lateral pass.
-4. Finish with a controlled push-in or upward pull-away.
-ENVIRONMENT LOCK: Use ONLY visible elements. Do NOT hallucinate. Exact spatial layout, scale, perspective, weather, and shadows.
-LIGHTING: Match reference exactly. Natural cinematic contrast.
-LENS: 24-28mm aerial equivalent.
+IMPORTANT CLARIFICATION (NON-NEGOTIABLE):
+This video represents clean aerial camera footage captured from a drone platform, but the drone itself must be completely invisible.
+- No drone body
+- No propellers
+- No drone shadows
+- No reflections of the drone
+- No vibration or POV artifacts
+- No indication that a drone exists in the frame
 
-OUTPUT: Return ONLY a clean, detailed, single cohesive cinematic description suitable for Google Veo.
+The result must look like a floating, stabilized aerial camera, used in high-end commercial architectural films.
+
+OBJECTIVE:
+Create a cinematic commercial aerial video that enhances the building’s visual appeal while preserving absolute realism and reference accuracy.
+
+REFERENCE INTEGRITY:
+- Use ONLY the uploaded reference images as visual truth.
+- Do NOT alter, enhance, retouch, or redesign any part of the building.
+- No AI reconstruction, no beautification, no geometry changes.
+- Materials, textures, colors, and proportions must remain exact.
+
+VIDEO FORMAT:
+- Aspect Ratio: 9:16 (vertical)
+- Duration: 5 seconds
+- Style: Premium cinematic commercial
+- Motion Feel: slow, elegant, refined
+
+AERIAL CAMERA MOVEMENT (DRONE-INVISIBLE):
+1. OPENING AERIAL ESTABLISH: Start from a distant elevated position. Entire building visible. Slow, graceful forward movement.
+2. DIMENSIONAL REVEAL: Gentle descent while moving forward. Subtle lateral drift or yaw to reveal width and depth. Smooth parallax for cinematic dimensionality. No inspection-style motion.
+3. HERO FINISH FRAME: End with a stable, centered hero composition. Clean framing suitable for commercial branding. No motion distractions.
+
+CAMERA BEHAVIOR:
+- Perfect stabilization (cinema-gimbal quality). Ultra-smooth acceleration and deceleration. No shake, jitter, or micro-vibrations. No rolling shutter artifacts.
+
+LIGHTING & COLOR:
+- Match time of day, sun angle, and shadows from the references. Natural cinematic contrast without altering real colors. No artificial glow, HDR exaggeration, or dramatic grading.
+
+LENS & IMAGE CHARACTER:
+- Cinematic aerial lens (24–28mm equivalent). Natural perspective. Clean optics, no distortion. Subtle motion blur only.
+
+ENVIRONMENT LOCK:
+- Surroundings must match the reference images exactly. No added people, vehicles, or movement.
+
+ABSOLUTE EXCLUSIONS:
+- No drone shadows, propeller shadows, or reflections. No POV indicators. No CGI or animated look. No text or logos.
+
+FINAL OUTPUT:
+Generate a single, cohesive, video-generation-ready prompt describing clean, invisible-drone aerial camera footage optimized for a cinematic commercial advertisement in a 5-second vertical video.
 `;
 
 export async function generateDirectorPrompt(imageBuffer: string, mimeType: string): Promise<string> {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
-  // Refactor: use systemInstruction in config as per guidelines for complex prompt rules.
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-3-pro-preview',
     contents: {
       parts: [
-        { inlineData: { data: imageBuffer, mimeType } }
+        { inlineData: { data: imageBuffer, mimeType } },
+        { text: "Generate a 5-second cinematic aerial camera prompt for this luxury architectural project, following the strict invisible-drone commercial rules." }
       ]
     },
     config: {
       systemInstruction: CINEMATOGRAPHY_RULES,
-      temperature: 0.7,
+      temperature: 0.3,
       topP: 0.95,
       topK: 40
     }
   });
 
-  // Correct extraction: use .text property as per guidelines.
-  return response.text?.trim() || "A professional cinematic drone shot of the scene.";
+  return response.text?.trim() || "Clean aerial camera footage, 5-second cinematic luxury commercial reveal of the building, invisible-drone stabilized flight path.";
 }
 
 export async function generateVeoVideo(prompt: string, imageBuffer: string, mimeType: string, onUpdate: (msg: string) => void): Promise<string> {
-  // Always create a new instance to ensure latest API key before making the call.
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
-  onUpdate("Initializing cinematic sequence...");
+  onUpdate("Initializing cinematic master sequence...");
   
   let operation;
   try {
@@ -64,35 +97,32 @@ export async function generateVeoVideo(prompt: string, imageBuffer: string, mime
       }
     });
   } catch (error: any) {
-    // Graceful error handling for expired or invalid API keys.
     if (error.message?.includes("Requested entity was not found")) {
       throw new Error("API_KEY_EXPIRED");
     }
     throw error;
   }
 
-  onUpdate("Aerial drone in flight... framing the shot.");
+  onUpdate("Stabilizing aerial camera platform...");
   
   while (!operation.done) {
-    await new Promise(resolve => setTimeout(resolve, 8000));
+    await new Promise(resolve => setTimeout(resolve, 10000));
     operation = await ai.operations.getVideosOperation({ operation: operation });
     
-    // Rotation of immersive messages to improve UX during long waits.
     const messages = [
-      "Stabilizing gimbal trajectory...",
-      "Adjusting aperture for natural lighting...",
-      "Calculating parallax between layers...",
-      "Rendering cinematic motion blur...",
-      "Ensuring fluid drone physics...",
-      "Finalizing commercial-grade output..."
+      "Smoothing cinematic drift...",
+      "Matching reference lighting and shadows...",
+      "Refining structural geometry lock...",
+      "Eliminating drone artifacts...",
+      "Optimizing 5-second hero reveal...",
+      "Finalizing luxury commercial export..."
     ];
     onUpdate(messages[Math.floor(Math.random() * messages.length)]);
   }
 
   const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
-  if (!downloadLink) throw new Error("Video generation failed to return a URI.");
+  if (!downloadLink) throw new Error("Aerial capture failed.");
 
-  // Append API key when fetching from the download link as per Veo requirements.
   const response = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
   const blob = await response.blob();
   return URL.createObjectURL(blob);
